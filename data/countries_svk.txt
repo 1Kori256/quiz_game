@@ -1,0 +1,202 @@
+Afrika
+Alžírsko - Alžír
+Angola - Luanda
+Benin - Porto-Novo
+Botswana - Gaborone
+Burkina Faso - Ouagadougou
+Burundi - Gitega
+Čad - N'Djamena
+Džibutsko - Džibuti
+Egypt - Káhira
+Eritrea - Asmara
+Eswatini - Mbabane
+Etiópia - Addis Abeba
+Gabon - Libreville
+Gambia - Banjul
+Ghana - Akkra
+Guinea - Konakry
+Guinea-Bissau - Bissau
+Južná Afrika - Kapské Mesto
+Južný Sudán - Juba
+Kamerun - Yaoundé
+Kapverdy - Praia
+Keňa - Nairobi
+Komory - Moroni
+Kongo - Brazzaville
+Konžská demokratická republika - Kinshasa
+Lesotho - Maseru
+Libéria - Monrovia
+Líbya - Tripolis
+Madagaskar - Antananarivo
+Malawi - Lilongwe
+Mali - Bamako
+Maroko - Rabat
+Mauritánia - Nouakchott
+Maurícius - Port Louis
+Mozambik - Maputo
+Namíbia - Windhoek
+Niger - Niamey
+Nigéria - Abuja
+Pobrežie Slonoviny - Yamoussoukro
+Rovníková Guinea - Malabo
+Rwanda - Kigali
+Senegal - Dakar
+Seychely - Viktória
+Sierra Leone - Freetown
+Somálsko - Mogadišo
+Stredoafrická republika - Bangui
+Sudán - Chartúm
+Svätý Tomáš a Princov ostrov - São Tomé
+Tanzánia - Dodoma
+Togo - Lomé
+Tunisko - Tunis
+Uganda - Kampala
+Zambia - Lusaka
+Zimbabwe - Harare
+Amerika
+Antigua a Barbuda - Saint John's
+Argentína - Buenos Aires
+Bahamy - Nassau
+Barbados - Bridgetown
+Belize - Belmopan
+Bolívia - Sucre
+Brazília - Brazília
+Čile - Santiago
+Dominika - Roseau
+Dominikánska republika - Santo Domingo
+Ekvádor - Quito
+Grenada - Saint George's
+Guatemala - Guatemala
+Guyana - Georgetown
+Haiti - Port-au-Prince
+Honduras - Tegucigalpa
+Jamajka - Kingston
+Kanada - Ottawa
+Kolumbia - Bogota
+Kostarika - San José
+Kuba - Havana
+Mexiko - Mexiko
+Nikaragua - Managua
+Panama - Panama
+Paraguaj - Asunción
+Peru - Lima
+Salvádor - San Salvádor
+Spojené štáty americké - Washington D.C.
+Surinam - Paramaribo
+Svätá Lucia - Castries
+Svätý Krištof a Nevis - Basseterre
+Svätý Vincent a Grenadíny - Kingstown
+Trinidad a Tobago - Port of Spain
+Uruguaj - Montevideo
+Venezuela - Caracas
+Ázia
+Afganistan - Kábul
+Arménsko - Jerevan
+Azerbajdžan - Baku
+Bahrain - Manáma
+Bangladéš - Dháka
+Bhután - Thimphu
+Brunej - Bandar Seri Begawan
+Čína - Peking
+Filipíny - Manila
+Gruzínsko - Tbilisi
+India - Naí Dillí
+Indonézia - Jakarta
+Irak - Bagdad
+Irán - Teherán
+Izrael - Jeruzalem
+Japonsko - Tokio
+Jemen - Saná
+Jordánsko - Ammán
+Južná Kórea - Soul
+Kambodža - Phnom Pénh
+Katar - Dauha
+Kazachstan - Nur-Sultan
+Kirgizsko - Biškek
+Kuvajt - Kuvajt
+Laos - Vientian
+Libanon - Bejrút
+Malajzia - Kuala Lumpur
+Maledivy - Malé
+Mjanmarsko - Nay Pyi Taw
+Mongolsko - Ulánbátar
+Nepál - Káthmandu
+Omán - Maskat
+Pakistan - Islamabad
+Palestína - Jeruzalem (Východ)
+Saudská Arábia - Rijád
+Severná Kórea - Pchjongjang
+Singapur - Singapur
+Spojené arabské emiráty - Abú Zabí
+Srí Lanka - Šrí Džajavardanapura Kotte
+Sýria - Damask
+Tadžikistan - Dušanbe
+Taiwan - Tchaj-pej
+Thajsko - Bangkok
+Turecko - Ankara
+Turkménsko - Ašchabad
+Uzbekistan - Taškent
+Vietnam - Hanoj
+Východný Timor - Dili
+Európa
+Albánsko - Tirana
+Andorra - Andorra la Vella
+Belgicko - Brusel
+Bielorusko - Minsk
+Bosna a Hercegovina - Sarajevo
+Bulharsko - Sofia
+Cyprus - Nikózia
+Dánsko - Kodaň
+Estónsko - Talin
+Francúzsko - Paríž 
+Fínsko - Helsinki
+Grécko - Atény
+Holandsko - Amsterdam
+Chorvátsko - Záhreb
+Island - Reykjavík
+Kosovo - Priština
+Lichtenštajnsko - Vaduz
+Litva - Vilnius
+Lotyšsko - Riga
+Luxembursko - Luxembursko
+Malta - Valletta
+Maďarsko - Budapešť
+Moldavsko - Kišiňov
+Monako - Monako
+Nemecko - Berlín
+Nórsko - Oslo
+Portugalsko - Lisabon
+Poľsko - Varšava
+Rakúsko - Viedeň
+Rumunsko - Bukurešť
+Rusko - Moskva
+San Maríno - San Maríno
+Severné Macedónsko - Skopje
+Slovensko - Bratislava
+Slovinsko - Ľubľana
+Spojené kráľovstvo - Londýn
+Srbsko - Belehrad
+Taliansko - Rím
+Ukrajina - Kyjev
+Vatikán - Vatikán
+Írsko - Dublin
+Česko - Praha
+Čierna Hora - Podgorica
+Španielsko - Madrid
+Švajčiarsko - Bern
+Švédsko - Štokholm
+Oceánia
+Austrália - Canberra
+Fidži - Suva
+Kiribati - Tarawa
+Marshallove ostrovy - Majuro
+Mikronézia - Palikir
+Nauru - Yaren
+Nový Zéland - Wellington
+Palau - Ngerulmud
+Papua Nová Guinea - Port Moresby
+Samoa - Apia
+Šalamúnove ostrovy - Honiara
+Tonga - Nuku'alofa
+Tuvalu - Funafuti
+Vanuatu - Port Vila
