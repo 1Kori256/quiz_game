@@ -1,439 +1,243 @@
-import pygame
-import pygame.gfxdraw
-import sys
-import unidecode
+import argparse
+from pathlib import Path
 import random
+import pygame
 
+from quiz import QuizSession, load_countries
 from scripts.config import load_config
+from widgets import (BACKGROUND_COLOR, CYAN, Button, InputRect,
+                     draw_bordered_rounded_rect, rendered_text)
 
-
-def draw_rounded_rect(surface, rect, color, corner_radius):
-
-    if rect.width < 2 * corner_radius or rect.height < 2 * corner_radius:
-        raise ValueError(f"Both height (rect.height) and width (rect.width) must be > 2 * corner radius ({corner_radius})")
-
-    pygame.gfxdraw.aacircle(surface, rect.left+corner_radius, rect.top+corner_radius, corner_radius, color)
-    pygame.gfxdraw.aacircle(surface, rect.right-corner_radius-1, rect.top+corner_radius, corner_radius, color)
-    pygame.gfxdraw.aacircle(surface, rect.left+corner_radius, rect.bottom-corner_radius-1, corner_radius, color)
-    pygame.gfxdraw.aacircle(surface, rect.right-corner_radius-1, rect.bottom-corner_radius-1, corner_radius, color)
-
-    pygame.gfxdraw.filled_circle(surface, rect.left+corner_radius, rect.top+corner_radius, corner_radius, color)
-    pygame.gfxdraw.filled_circle(surface, rect.right-corner_radius-1, rect.top+corner_radius, corner_radius, color)
-    pygame.gfxdraw.filled_circle(surface, rect.left+corner_radius, rect.bottom-corner_radius-1, corner_radius, color)
-    pygame.gfxdraw.filled_circle(surface, rect.right-corner_radius-1, rect.bottom-corner_radius-1, corner_radius, color)
-
-    rect_tmp = pygame.Rect(rect)
-
-    rect_tmp.width -= 2 * corner_radius
-    rect_tmp.center = rect.center
-    pygame.draw.rect(surface, color, rect_tmp)
-
-    rect_tmp.width = rect.width
-    rect_tmp.height -= 2 * corner_radius
-    rect_tmp.center = rect.center
-    pygame.draw.rect(surface, color, rect_tmp)
-
-
-def draw_bordered_rounded_rect(surface, rect, color, border_color, corner_radius, border_thickness):
-    if corner_radius < 0:
-        raise ValueError(f"border radius ({corner_radius}) must be >= 0")
-    
-    rect_tmp = pygame.Rect(rect)
-
-    if border_thickness:
-        if corner_radius <= 0:
-            pygame.draw.rect(surface, border_color, rect_tmp)
-        else:
-            draw_rounded_rect(surface, rect_tmp, border_color, corner_radius)
-
-        rect_tmp.inflate_ip(-2*border_thickness, -2*border_thickness)
-        inner_radius = corner_radius - border_thickness + 1
-    else:
-        inner_radius = corner_radius
-
-    if inner_radius <= 0:
-        pygame.draw.rect(surface, color, rect_tmp)
-    else:
-        draw_rounded_rect(surface, rect_tmp, color, inner_radius)
-    
-
-def rgba2rgb(background_color, color):
-    alpha = color[3]
-    
-    return (
-        (1 - alpha) * background_color[0] + alpha * color[0],
-        (1 - alpha) * background_color[1] + alpha * color[1],
-        (1 - alpha) * background_color[2] + alpha * color[2],
-    )
-
-
-class Button:
-    def __init__(self, font, text, width, height, pos):
-        self.pressed = False
-        self.clickable = True
-        self.clicked = False
-        
-        self.font = font
-        self.text = text
-        self.real_text = unidecode.unidecode(self.text).lower()
-        
-        self.width = width
-        self.height = height
-        self.pos = pos
-        self.rect = pygame.Rect(self.pos, (self.width, self.height))
-        self.color = [0, 191, 255]
-        self.alpha = 0.1
-        
-        self.text_surf = self.font.render(text, True, (255, 255, 255))
-        self.text_rect = self.text_surf.get_rect(center = [self.rect.center[0], self.rect.center[1] + 1])
-        
-    def draw(self, surface):
-        draw_bordered_rounded_rect(surface, self.rect, rgba2rgb(BACKGROUND_COLOR, self.color + [self.alpha]), self.color, 10, 3)
-        surface.blit(self.text_surf, self.text_rect)
-        self.check_click()
-
-    def check_click(self):
-
-        if self.clickable:
-            self.clicked = False        
-            mouse_pos = pygame.mouse.get_pos()
-            if self.rect.collidepoint(mouse_pos):
-                self.alpha = min(self.alpha + 0.05, 1)
-                if pygame.mouse.get_pressed()[0]:
-                    self.pressed = True
-                else:
-                    if self.pressed == True:
-                        self.clicked = True
-                        self.pressed = False                
-            else:
-                self.pressed = False
-                self.alpha = max(self.alpha - 0.07, 0.1)
-
-
-class InputRect:
-    def __init__(self, font, width, height, pos):
-        
-        self.font = font
-        self.width = width
-        self.height = height
-        self.pos = pos
-        
-        self.auto_capital_letter = True
-        
-        self.text_color = (255, 255, 255)
-        self.color = [0, 191, 255]
-        self.alpha = 0.1
-        
-        self.active = False
-        self.entered = False
-        
-        self.hitbox = pygame.Rect(self.pos, (self.width, self.height))
-        
-        self.text = ""
-        self.real_text = ""
-        self.max_characters = 25
-        
-        self.backspace_pressed = False
-        self.backspace_wait = 120
-        self.backspace_counter = 0
-        
-        self.render_text()
-
-    def render_text(self):
-        
-        if len(self.text) > 0:
-            text_surface = self.font.render(self.text, True, self.text_color)
-            if text_surface.get_width() > self.width:
-                text_surface = pygame.transform.smoothscale(text_surface, (self.width, int(text_surface.get_height() * (self.width / text_surface.get_width()))))
-        
-        else:
-            text_surface = self.font.render("Napíšte text sem", True, rgba2rgb(BACKGROUND_COLOR, self.color + [max(0.2, self.alpha)]))
-        
-        self.text_image = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        self.text_image.blit(text_surface, ((self.width - text_surface.get_width()) // 2, (self.height - text_surface.get_height()) // 2 + 2))
-
-    def update(self, surface, event_list, elapsed_time):
-        
-        self.entered = False
-        
-        for event in event_list:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                self.active = self.hitbox.collidepoint(event.pos)
-                
-            if event.type == pygame.KEYDOWN and self.active:
-                if event.key == pygame.K_BACKSPACE:
-                    if pygame.key.get_mods() & pygame.KMOD_CTRL:
-                        self.text = ""
-                        self.backspace_counter = 0
-                    else:
-                        self.backspace_pressed = True
-                        self.text = self.text[:-1]
-                        self.backspace_counter = 0
-                    
-                elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
-                    #self.active = False
-                    self.entered = True
-                    
-                else:
-                    if len(self.text) <= self.max_characters:
-                        letter = event.unicode
-                        if self.auto_capital_letter and (len(self.text) == 0 or self.text[-1] == " "):
-                            letter = letter.upper()
-                        self.text += letter
-                    
-            if event.type == pygame.KEYUP:
-                if event.key == pygame.K_BACKSPACE:
-                    self.backspace_pressed = False
-                    self.backspace_counter = 0
-        
-        if self.backspace_pressed:
-            self.backspace_counter += elapsed_time
-            if self.backspace_counter >= self.backspace_wait:
-                self.text = self.text[:-1]
-                self.backspace_counter = self.backspace_wait - 30
-        
-        if self.hitbox.collidepoint(pygame.mouse.get_pos()) or self.active:
-            self.alpha = min(self.alpha + 0.05, 1)
-            
-        else:
-            self.alpha = max(self.alpha - 0.07, 0.1)
-        
-        self.real_text = unidecode.unidecode(self.text).lower()
-        self.render_text()
-        
-        draw_bordered_rounded_rect(surface, pygame.Rect(self.pos, (self.width, self.height)), rgba2rgb(BACKGROUND_COLOR, self.color + [self.alpha]), self.color, 10, 3)
-        surface.blit(self.text_image, self.pos)
-
-
-def load_countries(path) -> dict:
-    
-    with open(path, encoding="utf8") as file:
-        raw_data = file.readlines()
-        
-    data = {}
-    for line in raw_data:
-        if "-" not in line:
-            current_region = line.strip()
-        else:
-            data[line.split(" - ")[0].strip()] = {
-                "region": current_region, 
-                "capital": [line.split(" - ")[1].strip(), unidecode.unidecode(line.split(" - ")[1].strip()).lower()], 
-                "flag": unidecode.unidecode(line.split(" - ")[0].strip()).lower() + ".png",
-                "blindmap": unidecode.unidecode(line.split(" - ")[0].strip()).lower() + ".png"}
-            
-    return data
+ROOT = Path(__file__).resolve().parent
 
 
 class Game:
-    def __init__(self):
-        
-        self.config = load_config("config")
-        
+    def __init__(self, seed=None):
+        self.config = load_config(ROOT / 'config')
         pygame.init()
-        self.surface = pygame.display.set_mode(self.config["window"]["resolution"], pygame.SRCALPHA, 32)
-        pygame.display.set_caption("Geografia - Quiz")
-        self.clock = pygame.time.Clock()
-        
-        self.countries_data = load_countries("data/countries_svk.txt")
-        
-        self.state = "main_menu"
-        self.prev_state = "main_menu"
-        self.transition = [False, 0]
-        self.wait = 0
-        self.sign = 1
-        
-        self.font = pygame.font.Font("data/font/Mainlux-Light.otf", 30)
-        self.font_big = pygame.font.Font("data/font/Mainlux-Light.otf", 60)
-        
-        self.main_menu_buttons = [
-            Button(self.font, "Hrať", 600, 50, (100, 275)),
-            Button(self.font, "Nastavenia", 600, 50, (100, 350)),
-            Button(self.font, "Vypnúť", 600, 50, (100, 650))
-        ]
-        
-        self.settings_buttons = [
-            Button(self.font, "Späť", 600, 50, (100, 650))
-        ]
-        
-        self.current_country = "Mexiko"
-        self.game_buttons = []
-        self.current_countries = [0] * 4
-        self.possible_countries = []
-        
-        self.questions = []
-        self.questions_answered = 0
-        self.corrent_answers = 0
-        
-        self.input_rects = [
-            InputRect(self.font, 600, 50, (100, 325))
-        ]
-        
-        self.elapsed_time = 0
-        
-    def run(self):
-        while True:
-            if self.transition[0]:
-                if self.prev_state == "main_menu":
-                    self.main_menu()
-                if self.prev_state == "settings":
-                    self.settings()
-                if self.prev_state == "game":
-                    self.run_game()
-                
-                if self.wait > 0:
-                    self.wait -= self.elapsed_time / 1000
-                    self.transition[1] = 1
-                else:
-                    self.transition[1] = max(min(self.transition[1] + self.sign * 20, 255), 0)
-                    
-                transition_surface = pygame.Surface(self.config["window"]["resolution"], pygame.SRCALPHA, 32)
-                transition_surface.fill(BACKGROUND_COLOR + [self.transition[1]])
-                self.surface.blit(transition_surface, (0, 0))
-                
-                if self.transition[1] >= 255:
-                    self.prev_state = self.state
-                    self.sign *= -1
-                    
-                    if self.state == "game":
-                        self.game_buttons = []
-                        self.current_country = self.questions[self.questions_answered]
-                        self.input_rects[0].text = ""
-                    
-                if self.transition[1] <= 0:
-                    self.sign *= -1
-                    self.transition = [False, 0]
-                
-            else:
-                if self.state == "main_menu":
-                    self.main_menu()
-                elif self.state == "settings":
-                    self.settings()
-                elif self.state == "game":
-                    self.run_game()
-                    
-            pygame.display.update()
-            self.elapsed_time = self.clock.tick(self.config["window"]["fps"])
-            
-    def main_menu(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-        
-        self.surface.fill(BACKGROUND_COLOR)
-        draw_bordered_rounded_rect(self.surface, pygame.Rect((50, 50), (700, 700)), BACKGROUND_COLOR, (50, 50, 50), 10, 3)
-        
-        for button in self.main_menu_buttons:
-            button.draw(self.surface)
-    
-        if self.main_menu_buttons[0].clicked:
-            self.transition = [True, 1]
-            self.questions = random.sample(list(self.countries_data.keys()), 10)
-            self.state = "game"
-            
-        if self.main_menu_buttons[1].clicked:
-            self.transition = [True, 1]
-            self.state = "settings"
-            
-        if self.main_menu_buttons[2].clicked:
+        try:
+            self.window = pygame.display.set_mode(self.config['window']['resolution'])
+            pygame.display.set_caption('Geografia - Quiz')
+            self.surface = pygame.Surface((800, 800)).convert()
+            self.panel = self.surface.copy()
+            self.panel.fill(BACKGROUND_COLOR)
+            draw_bordered_rounded_rect(self.panel, pygame.Rect(50, 50, 700, 700),
+                                      BACKGROUND_COLOR, (50, 50, 50), 10, 3)
+            self.overlay = pygame.Surface((800, 800)).convert()
+            self.overlay.fill(BACKGROUND_COLOR)
+            self.clock = pygame.time.Clock()
+            font = str(ROOT / 'data/font/Mainlux-Light.otf')
+            self.font = pygame.font.Font(font, 30)
+            self.font_big = pygame.font.Font(font, 60)
+            self.font_small = pygame.font.Font(font, 20)
+            self.countries = load_countries(ROOT / 'data/countries_svk.txt')
+            self.regions = [None] + list(dict.fromkeys(c.region for c in self.countries.values()))
+            self.counts = [5, 10, 20, None]
+            self.region_index, self.count_index = 0, 1
+            self.rng = random.Random(seed)
+            self.session = None
+            self.state = 'main_menu'
+            self.running = True
+            self.transition = None
+            self.mouse = (-100, -100)
+            self.main_buttons = [Button(self.font, label, pos=(100, y)) for label, y in
+                                 (('Hrať', 275), ('Nastavenia', 350), ('Vypnúť', 650))]
+            self.settings_buttons = [Button(self.font, label, pos=(100, y)) for label, y in
+                                     (('Oblasť: Všetky', 275), ('Otázky: 10', 350), ('Späť', 650))]
+            self.result_buttons = [Button(self.font, label, pos=(100, y)) for label, y in
+                                   (('Hrať znova', 500), ('Hlavné menu', 650))]
+            self.input = InputRect(self.font)
+            self.suggestion_buttons = []
+            self.suggestion_key = None
+        except Exception:
             pygame.quit()
-            sys.exit()
-            
-            
-        text_surface = self.font_big.render("Geografia - Quiz", True, (255, 255, 255))
-        self.surface.blit(text_surface, ((800 - text_surface.get_width()) // 2, 165 - text_surface.get_height() // 2 + 2))
+            raise
 
-    def settings(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-        
-        self.surface.fill(BACKGROUND_COLOR)
-        draw_bordered_rounded_rect(self.surface, pygame.Rect((50, 50), (700, 700)), BACKGROUND_COLOR, (50, 50, 50), 10, 3)
-        
-        for button in self.settings_buttons:
-            button.draw(self.surface)
-            
-        if self.settings_buttons[0].clicked:
-            self.transition = [True, 1]
-            self.state = "main_menu"
-            
-        text_surface = self.font_big.render("Nastavenia", True, (255, 255, 255))
-        self.surface.blit(text_surface, ((800 - text_surface.get_width()) // 2, 165 - text_surface.get_height() // 2 + 2))
+    def start_round(self):
+        self.change_state('game')
+        self.transition['session'] = QuizSession(
+            self.countries, self.counts[self.count_index], self.regions[self.region_index], self.rng)
 
+    def change_state(self, target, delay=0, advance=False):
+        self.transition = {'target': target, 'alpha': 0.0, 'delay': delay,
+                           'phase': 'out', 'advance': advance}
+        self.input.backspace_pressed = False
+        for button in self.buttons():
+            button.pressed = button.clicked = False
 
-    def run_game(self):
-        event_list = pygame.event.get()
-        for event in event_list:
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+    def buttons(self):
+        return {'main_menu': self.main_buttons, 'settings': self.settings_buttons,
+                'game': self.suggestion_buttons, 'results': self.result_buttons}[self.state]
 
-        self.surface.fill(BACKGROUND_COLOR)
-        draw_bordered_rounded_rect(self.surface, pygame.Rect((50, 50), (700, 700)), BACKGROUND_COLOR    , (50, 50, 50), 10, 3)
-        
-        for button in self.game_buttons:
-            button.draw(self.surface)
-        
-        text_surface = self.font.render("Hlavné mesto:", True, (255, 255, 255))
-        self.surface.blit(text_surface, ((800 - text_surface.get_width()) // 2, (200 - text_surface.get_height()) // 2 + 2))
-        
-        text_surface = self.font_big.render(self.current_country, True, (255, 255, 255))
-        if text_surface.get_width() > 600:
-                text_surface = pygame.transform.smoothscale(text_surface, (600, int(text_surface.get_height() * (600 / text_surface.get_width()))))
-        self.surface.blit(text_surface, ((800 - text_surface.get_width()) // 2, 215 - text_surface.get_height() // 2 + 2))
+    def update_suggestions(self):
+        key = self.input.text
+        if key != self.suggestion_key:
+            self.suggestion_key = key
+            choices = self.session.suggestions(key)
+            self.suggestion_buttons = [Button(self.font, text, pos=(100, 425 + 75 * i))
+                                       for i, text in enumerate(choices)]
 
-        for input_rect in self.input_rects:
-            input_rect.update(self.surface, event_list, self.elapsed_time)
-        
-        if len(self.input_rects[0].real_text) >= 3:
-            self.possible_countries = list(filter(lambda x: self.input_rects[0].real_text in x[1], [[country, data["capital"][1]] for country, data in self.countries_data.items()]))
-        else:
-            self.possible_countries = []
-                  
-        for i in range(4):
-            if i < len(self.possible_countries):
-                if self.possible_countries[i] == self.current_countries[i]:
-                    pass
-                else:
-                    try:
-                        self.game_buttons.pop(i)
-                    except:
-                        pass
-                    
-                    self.current_countries[i] = self.possible_countries[i]
-                    self.game_buttons.insert(i, Button(self.font, self.countries_data[self.possible_countries[i][0]]["capital"][0], 600, 50, (100, 425 + 75 * i)))
+    def submit(self, text):
+        answer = self.session.submit(text)
+        if answer is None:
+            return
+        self.input.color = (0, 255, 0) if answer.correct else (255, 0, 0)
+        for button in self.suggestion_buttons:
+            if button.text == text:
+                button.color = self.input.color
+        self.change_state('game', delay=0.5, advance=True)
+
+    def update_transition(self, elapsed):
+        transition = self.transition
+        if transition is None:
+            return
+        seconds = elapsed / 1000
+        if transition['delay'] > 0:
+            transition['delay'] = max(0, transition['delay'] - seconds)
+            return
+        direction = 1 if transition['phase'] == 'out' else -1
+        transition['alpha'] = max(0, min(255, transition['alpha'] + direction * seconds * 1200))
+        if transition['phase'] == 'out' and transition['alpha'] >= 255:
+            if 'session' in transition:
+                self.session = transition['session']
+            if transition['advance']:
+                self.session.advance()
+                if self.session.finished:
+                    transition['target'] = 'results'
+            self.state = transition['target']
+            transition['phase'] = 'in'
+            if self.state == 'game':
+                self.input.clear()
+                self.suggestion_buttons = []
+                self.suggestion_key = None
             else:
-                try:
-                    self.game_buttons.pop(i)
-                except:
-                    pass
-                self.current_countries[i] = 0
-                
-        
-        for button in self.game_buttons:        
-            if button.clicked or (self.input_rects[0].entered and len(self.game_buttons) == 1):
-                self.questions_answered += 1
-                
-                if button.real_text == self.countries_data[self.current_country]["capital"][1]:
-                    button.color = [0, 255, 0]
-                    self.corrent_answers += 1
-                else:
-                    button.color = [255, 0, 0]
-                
-                self.transition = [True, 1]
-                self.wait = 0.5
-                if self.questions_answered < len(self.questions):
-                    self.state = "game"
-                else:
-                    print(self.corrent_answers, self.questions_answered)
-                    self.corrent_answers = 0
-                    self.questions_answered = 0
-                    self.state = "main_menu"
-                
-        
-if __name__ == "__main__":
-    BACKGROUND_COLOR = [22, 22, 22]
-    game = Game()
-    game.run()
+                self.input.active = False
+                pygame.key.stop_text_input()
+        elif transition['phase'] == 'in' and transition['alpha'] <= 0:
+            self.transition = None
+
+    def events(self, events, elapsed):
+        for event in events:
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                if self.state == 'main_menu':
+                    self.running = False
+                elif self.transition is None:
+                    self.change_state('main_menu')
+        if not self.running or self.transition is not None:
+            return
+        if self.state == 'game':
+            self.input.update(events, elapsed, self.mouse)
+            self.update_suggestions()
+        for button in self.buttons():
+            button.update(events, self.mouse, elapsed)
+        if self.state == 'main_menu':
+            if self.main_buttons[0].clicked:
+                self.start_round()
+            elif self.main_buttons[1].clicked:
+                self.change_state('settings')
+            elif self.main_buttons[2].clicked:
+                self.running = False
+        elif self.state == 'settings':
+            if self.settings_buttons[0].clicked:
+                self.region_index = (self.region_index + 1) % len(self.regions)
+                region = self.regions[self.region_index] or 'Všetky'
+                self.settings_buttons[0].set_text('Oblasť: ' + region)
+            elif self.settings_buttons[1].clicked:
+                self.count_index = (self.count_index + 1) % len(self.counts)
+                count = self.counts[self.count_index] or 'Všetky'
+                self.settings_buttons[1].set_text(f'Otázky: {count}')
+            elif self.settings_buttons[2].clicked:
+                self.change_state('main_menu')
+        elif self.state == 'game':
+            clicked = next((button for button in self.suggestion_buttons if button.clicked), None)
+            if clicked is not None:
+                self.submit(clicked.text)
+            elif self.input.entered:
+                self.submit(self.input.text)
+        elif self.state == 'results':
+            if self.result_buttons[0].clicked:
+                self.start_round()
+            elif self.result_buttons[1].clicked:
+                self.change_state('main_menu')
+
+    def centered(self, text, y, font=None, color=(255, 255, 255)):
+        image = rendered_text(font or self.font, text, tuple(color))
+        self.surface.blit(image, image.get_rect(center=(400, y + 2)))
+
+    def render(self):
+        self.surface.blit(self.panel, (0, 0))
+        if self.state == 'main_menu':
+            self.centered('Geografia - Quiz', 165, self.font_big)
+        elif self.state == 'settings':
+            self.centered('Nastavenia', 165, self.font_big)
+        elif self.state == 'results':
+            self.centered('Výsledok', 165, self.font_big)
+            self.centered(f'{self.session.score} / {len(self.session.questions)}', 325, self.font_big, CYAN)
+            self.centered('Správne odpovede', 395)
+        elif self.state == 'game':
+            self.centered('Hlavné mesto:', 100)
+            self.centered(self.session.current.name, 215, self.font_big)
+            progress = rendered_text(self.font_small, f'{self.session.index + 1} / {len(self.session.questions)}')
+            self.surface.blit(progress, progress.get_rect(topright=(700, 75)))
+            self.input.draw(self.surface)
+            if self.session.pending is not None:
+                answer = self.session.pending
+                message = 'Správne' if answer.correct else f'Správna odpoveď: {answer.country.capital}'
+                self.centered(message, 395, self.font_small, self.input.color)
+        for button in self.buttons():
+            button.draw(self.surface)
+        if self.transition is not None:
+            self.overlay.set_alpha(round(self.transition['alpha']))
+            self.surface.blit(self.overlay, (0, 0))
+
+    def frame(self, elapsed):
+        elapsed = min(max(elapsed, 0), 250)
+        events = pygame.event.get()
+        converted = []
+        width, height = self.window.get_size()
+        for event in events:
+            if hasattr(event, 'pos'):
+                event = pygame.event.Event(event.type, {**event.dict,
+                    'pos': (event.pos[0] * 800 / width, event.pos[1] * 800 / height)})
+                self.mouse = event.pos
+            converted.append(event)
+        self.events(converted, elapsed)
+        if not self.running:
+            return False
+        self.update_transition(elapsed)
+        self.render()
+        if self.window.get_size() == (800, 800):
+            self.window.blit(self.surface, (0, 0))
+        else:
+            pygame.transform.scale(self.surface, self.window.get_size(), self.window)
+        pygame.display.flip()
+        return True
+
+    def run(self):
+        while self.frame(self.clock.tick(self.config['window']['fps'])):
+            pass
+
+    def close(self):
+        pygame.key.stop_text_input()
+        pygame.quit()
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Slovenský geografický kvíz')
+    parser.add_argument('--seed', type=int, help='repeat a question order for testing')
+    args = parser.parse_args()
+    game = None
+    try:
+        game = Game(seed=args.seed)
+        game.run()
+    except (OSError, ValueError, pygame.error) as error:
+        parser.exit(1, f'Cannot start quiz: {error}\n')
+    finally:
+        if game is not None:
+            game.close()
+
+
+if __name__ == '__main__':
+    main()
